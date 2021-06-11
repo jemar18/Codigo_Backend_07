@@ -1,7 +1,7 @@
 from datetime import timedelta
-from flask import Flask, app, request
+from flask import Flask, app, request, send_file
 from dotenv import load_dotenv
-
+from uuid import uuid4
 from config.conexion_bd import base_de_datos
 from os import environ, path
 from controllers.movimientos import MovimientosController
@@ -11,6 +11,7 @@ from flask_restful import Api
 from flask_jwt import JWT
 from config.seguridad import autenticador, identificador
 from config.custom_jwt import manejo_error_JWT
+from werkzeug.utils import secure_filename
 
 load_dotenv()
 app=Flask(__name__)
@@ -48,17 +49,35 @@ def archivos_permitidos(filename):
     return '.' in filename and filename.rsplit('.', 1)[-1].lower() in extensiones
 
 @app.route("/subirArchivo", methods=['POST'])
-def subir_archivo():
-  
+def subir_archivo():  
    print(request.files)
    archivo=request.files['archivo']
    print(archivo.filename)
    print(archivo.mimetype)
    if archivos_permitidos(archivo.filename):
-        archivo.save(path.join("multimedia",archivo.filename))
-        return 'ok'
+       formato_archivo=archivo.filename.rsplit('.', 1)[-1]
+       nombre_archivo=str(uuid4())+'.'+formato_archivo
+       nombre_archivo=secure_filename(nombre_archivo)
+       archivo.save(path.join("multimedia",nombre_archivo))
+       return {
+           "success":True,
+           "content":request.host_url+ "media/"+nombre_archivo,
+           "message":"archivo registrado exitosamente"
+       }
    else:
-       return "Archivo no Permitido"
+       return {
+           "success":True,
+           "content":None,
+           "message":"archivo no permitido"
+       },400
+       
+    
+@app.route("/media/<string:nombre>", methods=['GET'])
+def devolver_archivo(nombre): 
+    try: 
+        return send_file(path.join("multimedia", nombre)) 
+    except: 
+        return send_file(path.join("multimedia", "not_found.jpg")) , 404
 
 if __name__=="__main__":
     app.run(debug=True)
