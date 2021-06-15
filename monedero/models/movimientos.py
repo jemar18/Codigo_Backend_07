@@ -23,3 +23,17 @@ class MovimientoModel (base_de_datos.Model):
         self.movimientoImagen=imagen
         self.movimientoTipo=tipo
         self.usuario=usuario_id
+
+    def save(self):
+        base_de_datos.session.add(self)
+        base_de_datos.session.commit()
+    
+    def json(self):
+        return {
+            "movimientoId": self.movimientoId,
+            "movimientoNombre": self.movimientoNombre,
+            "movimientoMonto": self.movimientoMonto,
+            "movimientoFecha": str(self.movimientoFecha),
+            "movimientoImagen": self.movimientoImagen,
+            "movimientoTipo": self.movimientoTipo,
+        }

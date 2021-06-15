@@ -1,4 +1,5 @@
 from flask_restful import Resource, reqparse
+from sqlalchemy.sql.expression import text
 from models.movimientos import MovimientoModel
 from datetime import datetime
 from flask_jwt import jwt_required, current_identity
@@ -25,7 +26,7 @@ class MovimientosController(Resource):
     )
     movimientoSerializer.add_argument(
         'fecha',
-        type=datetime,
+        type=str,
         required=False,
         location='json',
     )
@@ -51,14 +52,21 @@ class MovimientosController(Resource):
         print(current_identity)
         data = self.movimientoSerializer.parse_args()
         print(data)
-        try:
-            fecha=datetime.strptime(data['fecha'],'$Y-%m-%d %H:%M:S')
-            return 'ok'
+        try:           
+            fecha = datetime.strptime(data['fecha'], '%Y-%m-%d %H:%M:%S')          
         except:
             return {
                 "success":False,
-                "message":"Formato de fecha incorrecto, el formato es YYY-MM-DD HH:MM:SS",
+                "message":"Formato de fecha incorrecto, el formato es YYYY-MM-DD HH:MM:SS",
                 "content":None
+            }
+
+        objMovimiento=MovimientoModel(data['nombre'],data['monto'],fecha,data['imagen'],data['tipo'],current_identity.get('usuarioId'))
+        objMovimiento.save()
+        return {
+                "success":True,
+                "message":"Registrado correctamente",
+                "content":objMovimiento.json()
             }
 
     def get(self):
